@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="BabyFrota.Api/BabyFrota.Api.csproj" />
+  <Project Path="Data/BabyFrota.Data.csproj" />
+  <Project Path="Domain/BabyFrota.Domain.csproj" />
+  <Project Path="DTOs/BabyFrota.DTOs.csproj" />
+  <Project Path="Services/Babyfrota.Services.csproj" />
+</Solution>
