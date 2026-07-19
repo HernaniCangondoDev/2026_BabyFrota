@@ -63,5 +63,5 @@ public partial class Cliente
 
     public virtual ICollection<Filho> Filhos { get; set; } = new List<Filho>();
 
-    public virtual ICollection<Locacao> Locacaos { get; set; } = new List<Locacao>();
+    public virtual ICollection<Locacao> Locacoes { get; set; } = new List<Locacao>();
 }

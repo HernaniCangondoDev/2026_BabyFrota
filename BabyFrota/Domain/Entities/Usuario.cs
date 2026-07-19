@@ -77,9 +77,9 @@ public partial class Usuario
 
     public virtual ICollection<Locacao> LocacaoCdusuarioEntregaNavigations { get; set; } = new List<Locacao>();
 
-    public virtual ICollection<Sangrium> Sangria { get; set; } = new List<Sangrium>();
+    public virtual ICollection<Sangria> Sangrias { get; set; } = new List<Sangria>();
 
     public virtual ICollection<Suprimento> Suprimentos { get; set; } = new List<Suprimento>();
 
-    public virtual ICollection<Tblog> Tblogs { get; set; } = new List<Tblog>();
+    public virtual ICollection<LogAuditoria> LogsAuditoria { get; set; } = new List<LogAuditoria>();
 }

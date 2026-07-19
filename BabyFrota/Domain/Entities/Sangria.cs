@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace BabyFrota.Domain.Entities;
 
-public partial class Sangrium
+public partial class Sangria
 {
     public int Cdsangria { get; set; }
 

@@ -28,23 +28,23 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<FormaRecebimento> FormaRecebimentos { get; set; }
 
-    public virtual DbSet<Locacao> Locacaos { get; set; }
+    public virtual DbSet<Locacao> Locacoes { get; set; }
 
     public virtual DbSet<Localidade> Localidades { get; set; }
 
     public virtual DbSet<Parcela> Parcelas { get; set; }
 
-    public virtual DbSet<Perfil> Perfils { get; set; }
+    public virtual DbSet<Perfil> Perfis { get; set; }
 
-    public virtual DbSet<PrecoLocacao> PrecoLocacaos { get; set; }
+    public virtual DbSet<PrecoLocacao> PrecoLocacoes { get; set; }
 
-    public virtual DbSet<Sangrium> Sangria { get; set; }
+    public virtual DbSet<Sangria> Sangrias { get; set; }
 
     public virtual DbSet<Status> Statuses { get; set; }
 
     public virtual DbSet<Suprimento> Suprimentos { get; set; }
 
-    public virtual DbSet<Tblog> Tblogs { get; set; }
+    public virtual DbSet<LogAuditoria> LogsAuditoria { get; set; }
 
     public virtual DbSet<TipoCarrinho> TipoCarrinhos { get; set; }
 
@@ -54,9 +54,9 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<Usuario> Usuarios { get; set; }
 
-    public virtual DbSet<Vlocacao> Vlocacaos { get; set; }
+    public virtual DbSet<Vlocacao> VLocacoes { get; set; }
 
-    public virtual DbSet<Vtroca> Vtrocas { get; set; }
+    public virtual DbSet<Vtroca> VTrocas { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -402,17 +402,17 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Troco).HasColumnType("decimal(12, 2)");
             entity.Property(e => e.ValorTotal).HasColumnType("decimal(12, 2)");
 
-            entity.HasOne(d => d.CdcaixaMovimentoNavigation).WithMany(p => p.Locacaos)
+            entity.HasOne(d => d.CdcaixaMovimentoNavigation).WithMany(p => p.Locacoes)
                 .HasForeignKey(d => d.CdcaixaMovimento)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Locacao_CaixaMovimento");
 
-            entity.HasOne(d => d.CdcarrinhoNavigation).WithMany(p => p.Locacaos)
+            entity.HasOne(d => d.CdcarrinhoNavigation).WithMany(p => p.Locacoes)
                 .HasForeignKey(d => d.Cdcarrinho)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Locacao_Carrinho");
 
-            entity.HasOne(d => d.CdclienteNavigation).WithMany(p => p.Locacaos)
+            entity.HasOne(d => d.CdclienteNavigation).WithMany(p => p.Locacoes)
                 .HasForeignKey(d => d.Cdcliente)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Locacao_Cliente");
@@ -507,15 +507,18 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.CdtipoCarrinho).HasColumnName("CDTipoCarrinho");
             entity.Property(e => e.Valor).HasColumnType("decimal(12, 2)");
 
-            entity.HasOne(d => d.CdtipoCarrinhoNavigation).WithMany(p => p.PrecoLocacaos)
+            entity.HasOne(d => d.CdtipoCarrinhoNavigation).WithMany(p => p.PrecoLocacoes)
                 .HasForeignKey(d => d.CdtipoCarrinho)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_PrecoLocacao_TipoCarrinho");
         });
 
-        modelBuilder.Entity<Sangrium>(entity =>
+        modelBuilder.Entity<Sangria>(entity =>
         {
             entity.HasKey(e => e.Cdsangria);
+
+            // Nome do DbSet (Sangrias) diverge do nome da tabela real (Sangria) - mapeamento explícito necessário.
+            entity.ToTable("Sangria");
 
             entity.Property(e => e.Cdsangria).HasColumnName("CDSangria");
             entity.Property(e => e.CdcaixaMovimento).HasColumnName("CDCaixaMovimento");
@@ -525,12 +528,12 @@ public partial class AppDbContext : DbContext
                 .HasColumnName("DTSangria");
             entity.Property(e => e.Valor).HasColumnType("decimal(12, 2)");
 
-            entity.HasOne(d => d.CdcaixaMovimentoNavigation).WithMany(p => p.Sangria)
+            entity.HasOne(d => d.CdcaixaMovimentoNavigation).WithMany(p => p.Sangrias)
                 .HasForeignKey(d => d.CdcaixaMovimento)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Sangria_CaixaMovimento");
 
-            entity.HasOne(d => d.CdusuarioNavigation).WithMany(p => p.Sangria)
+            entity.HasOne(d => d.CdusuarioNavigation).WithMany(p => p.Sangrias)
                 .HasForeignKey(d => d.Cdusuario)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Sangria_Usuario");
@@ -575,7 +578,7 @@ public partial class AppDbContext : DbContext
                 .HasConstraintName("FK_Suprimento_Usuario");
         });
 
-        modelBuilder.Entity<Tblog>(entity =>
+        modelBuilder.Entity<LogAuditoria>(entity =>
         {
             entity.HasKey(e => e.Cdlog).HasName("PK__TBLog__2480E780251C81ED");
 
@@ -598,7 +601,7 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.ValorAntigo).IsUnicode(false);
             entity.Property(e => e.ValorNovo).IsUnicode(false);
 
-            entity.HasOne(d => d.CdusuarioNavigation).WithMany(p => p.Tblogs)
+            entity.HasOne(d => d.CdusuarioNavigation).WithMany(p => p.LogsAuditoria)
                 .HasForeignKey(d => d.Cdusuario)
                 .HasConstraintName("FK__TBLog__CDUsuario__2704CA5F");
         });

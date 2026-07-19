@@ -23,9 +23,9 @@ public partial class CaixaMovimento
 
     public virtual Usuario? CdusuarioFechamentoNavigation { get; set; }
 
-    public virtual ICollection<Locacao> Locacaos { get; set; } = new List<Locacao>();
+    public virtual ICollection<Locacao> Locacoes { get; set; } = new List<Locacao>();
 
-    public virtual ICollection<Sangrium> Sangria { get; set; } = new List<Sangrium>();
+    public virtual ICollection<Sangria> Sangrias { get; set; } = new List<Sangria>();
 
     public virtual ICollection<Suprimento> Suprimentos { get; set; } = new List<Suprimento>();
 }

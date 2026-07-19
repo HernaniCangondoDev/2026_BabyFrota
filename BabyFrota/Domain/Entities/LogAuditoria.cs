@@ -3,7 +3,8 @@ using System.Collections.Generic;
 
 namespace BabyFrota.Domain.Entities;
 
-public partial class Tblog
+/// <summary>Trilha de auditoria de alterações (tabela legada TBLog).</summary>
+public partial class LogAuditoria
 {
     public int Cdlog { get; set; }
 

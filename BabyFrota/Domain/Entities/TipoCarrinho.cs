@@ -11,5 +11,5 @@ public partial class TipoCarrinho
 
     public virtual ICollection<Carrinho> Carrinhos { get; set; } = new List<Carrinho>();
 
-    public virtual ICollection<PrecoLocacao> PrecoLocacaos { get; set; } = new List<PrecoLocacao>();
+    public virtual ICollection<PrecoLocacao> PrecoLocacoes { get; set; } = new List<PrecoLocacao>();
 }

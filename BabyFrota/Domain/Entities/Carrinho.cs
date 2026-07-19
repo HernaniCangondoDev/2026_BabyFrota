@@ -41,7 +41,7 @@ public partial class Carrinho
 
     public virtual TipoCarrinho CdtipoCarrinhoNavigation { get; set; } = null!;
 
-    public virtual ICollection<Locacao> Locacaos { get; set; } = new List<Locacao>();
+    public virtual ICollection<Locacao> Locacoes { get; set; } = new List<Locacao>();
 
     public virtual ICollection<Troca> TrocaCdcarrinhoAnteriorNavigations { get; set; } = new List<Troca>();
 
