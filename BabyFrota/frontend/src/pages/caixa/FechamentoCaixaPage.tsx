@@ -10,7 +10,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { useCaixaAberto, useFecharCaixa } from '@/features/caixa/api'
-import { formatarDataHora, formatarMoeda } from '@/lib/utils'
+import { extrairMensagemErro, formatarDataHora, formatarMoeda } from '@/lib/utils'
+import { toast } from '@/stores/toast-store'
 
 const schema = z.object({
   valorFechamento: z.coerce.number().min(0, 'Valor inválido'),
@@ -37,8 +38,13 @@ export function FechamentoCaixaPage() {
 
   async function onSubmit(values: FormValues) {
     if (!confirm('Confirma o fechamento do caixa? Essa ação não pode ser desfeita.')) return
-    await fechar.mutateAsync(values)
-    setFechado(true)
+    try {
+      await fechar.mutateAsync(values)
+      setFechado(true)
+      toast.success('Caixa fechado com sucesso.')
+    } catch (err) {
+      toast.error('Não foi possível fechar o caixa.', extrairMensagemErro(err))
+    }
   }
 
   return (

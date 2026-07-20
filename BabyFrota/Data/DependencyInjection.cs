@@ -19,8 +19,16 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(options =>
             options.UseSqlServer(connectionString, sql =>
             {
-                sql.EnableRetryOnFailure(maxRetryCount: 3);
-                sql.CommandTimeout(30);
+                // maxRetryCount alto + CommandTimeout alto é uma combinação perigosa: uma única
+                // query lenta/travada (ex.: table scan em tabela grande sem índice) é reexecutada
+                // várias vezes antes de finalmente falhar, cada tentativa segurando uma conexão do
+                // pool por até CommandTimeout segundos — isso pode levar minutos e, se acontecer em
+                // paralelo em várias requisições, esgota o pool de conexões e trava o app inteiro
+                // (sintoma: "tudo fica carregando para sempre" mesmo em páginas sem relação alguma).
+                // Falha mais rápido aqui é preferível: o app já tem timeout no front (25s) e mostra
+                // erro via toast em vez de spinner infinito.
+                sql.EnableRetryOnFailure(maxRetryCount: 1, maxRetryDelay: TimeSpan.FromSeconds(3), errorNumbersToAdd: null);
+                sql.CommandTimeout(20);
             }));
 
         return services;

@@ -28,6 +28,9 @@ import {
 } from '@/features/carrinhos/api'
 import { useTiposCarrinho } from '@/features/tipos-carrinho/api'
 import type { Carrinho } from '@/features/carrinhos/types'
+import { toast } from '@/stores/toast-store'
+import { extrairMensagemErro } from '@/lib/utils'
+import { useDebouncedValue } from '@/hooks/use-debounced-value'
 
 /** Espelha o enum SituacaoCarrinho do backend: 1 Disponível, 2 Manutenção, 3 Reservado, 4 Alugado. */
 const STATUS_VARIANTE: Record<number, 'success' | 'warning' | 'info' | 'default'> = {
@@ -56,12 +59,13 @@ const TAMANHO_PAGINA_PADRAO = 10
 
 export function CarrinhosPage() {
   const [busca, setBusca] = useState('')
+  const buscaAtrasada = useDebouncedValue(busca, 400)
   const [statusFiltro, setStatusFiltro] = useState('')
   const [pagina, setPagina] = useState(1)
   const [tamanhoPagina, setTamanhoPagina] = useState(TAMANHO_PAGINA_PADRAO)
 
   const { data, isLoading } = useCarrinhos({
-    descricao: busca || undefined,
+    descricao: buscaAtrasada || undefined,
     statusId: statusFiltro ? Number(statusFiltro) : undefined,
     pagina,
     tamanhoPagina,
@@ -113,17 +117,28 @@ export function CarrinhosPage() {
   }
 
   async function onSubmit(values: FormValues) {
-    if (editando) {
-      await atualizar.mutateAsync({ id: editando.id, payload: values })
-    } else {
-      await criar.mutateAsync(values)
+    try {
+      if (editando) {
+        await atualizar.mutateAsync({ id: editando.id, payload: values })
+        toast.success('Carrinho atualizado com sucesso.')
+      } else {
+        await criar.mutateAsync(values)
+        toast.success('Carrinho cadastrado com sucesso.')
+      }
+      setModalAberto(false)
+    } catch (err) {
+      toast.error('Não foi possível salvar o carrinho.', extrairMensagemErro(err))
     }
-    setModalAberto(false)
   }
 
   async function onExcluir(carrinho: Carrinho) {
     if (!confirm(`Excluir o carrinho "${carrinho.descricao}"?`)) return
-    await excluir.mutateAsync(carrinho.id)
+    try {
+      await excluir.mutateAsync(carrinho.id)
+      toast.success('Carrinho excluído com sucesso.')
+    } catch (err) {
+      toast.error('Não foi possível excluir o carrinho.', extrairMensagemErro(err))
+    }
   }
 
   return (

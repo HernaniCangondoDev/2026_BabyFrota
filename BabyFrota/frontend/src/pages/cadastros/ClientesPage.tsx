@@ -27,6 +27,9 @@ import {
 } from '@/features/clientes/api'
 import { buscarCep } from '@/features/cep/api'
 import type { Cliente } from '@/features/clientes/types'
+import { toast } from '@/stores/toast-store'
+import { extrairMensagemErro } from '@/lib/utils'
+import { useDebouncedValue } from '@/hooks/use-debounced-value'
 
 const filhoSchema = z.object({
   id: z.number().optional(),
@@ -61,9 +64,10 @@ const TAMANHO_PAGINA_PADRAO = 10
 
 export function ClientesPage() {
   const [busca, setBusca] = useState('')
+  const buscaAtrasada = useDebouncedValue(busca, 400)
   const [pagina, setPagina] = useState(1)
   const [tamanhoPagina, setTamanhoPagina] = useState(TAMANHO_PAGINA_PADRAO)
-  const { data, isLoading } = useClientes({ nome: busca || undefined, pagina, tamanhoPagina })
+  const { data, isLoading } = useClientes({ nome: buscaAtrasada || undefined, pagina, tamanhoPagina })
 
   const criar = useCriarCliente()
   const atualizar = useAtualizarCliente()
@@ -202,17 +206,28 @@ export function ClientesPage() {
         sexo: f.sexo || undefined,
       })),
     }
-    if (editando) {
-      await atualizar.mutateAsync({ id: editando.id, payload })
-    } else {
-      await criar.mutateAsync(payload)
+    try {
+      if (editando) {
+        await atualizar.mutateAsync({ id: editando.id, payload })
+        toast.success('Cliente atualizado com sucesso.')
+      } else {
+        await criar.mutateAsync(payload)
+        toast.success('Cliente cadastrado com sucesso.')
+      }
+      setModalAberto(false)
+    } catch (err) {
+      toast.error('Não foi possível salvar o cliente.', extrairMensagemErro(err))
     }
-    setModalAberto(false)
   }
 
   async function onExcluir(cliente: Cliente) {
     if (!confirm(`Excluir o cliente "${cliente.nome}"?`)) return
-    await excluir.mutateAsync(cliente.id)
+    try {
+      await excluir.mutateAsync(cliente.id)
+      toast.success('Cliente excluído com sucesso.')
+    } catch (err) {
+      toast.error('Não foi possível excluir o cliente.', extrairMensagemErro(err))
+    }
   }
 
   const columns: DataTableColumn<Cliente>[] = [

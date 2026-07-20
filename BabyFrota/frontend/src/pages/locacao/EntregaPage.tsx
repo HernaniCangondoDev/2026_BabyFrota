@@ -21,7 +21,8 @@ import {
   useRegistrarEntrega,
 } from '@/features/locacoes/api'
 import type { Cliente } from '@/features/clientes/types'
-import { formatarDataHora, formatarMoeda } from '@/lib/utils'
+import { extrairMensagemErro, formatarDataHora, formatarMoeda } from '@/lib/utils'
+import { toast } from '@/stores/toast-store'
 
 const pagamentoSchema = z.object({
   formaRecebimentoId: z.coerce.number().min(1, 'Selecione a forma'),
@@ -91,10 +92,11 @@ export function EntregaPage() {
         pagamentos: values.pagamentos,
       })
       setMensagemSucesso(`Locação registrada para ${cliente.nome}.`)
+      toast.success('Entrega registrada com sucesso.', `Cliente: ${cliente.nome}`)
       setCliente(null)
       reset({ carrinhoId: 0, tempoMinutos: 0, desconto: 0, observacao: '', pagamentos: [] })
-    } catch {
-      // erro exibido abaixo via registrarEntrega.isError
+    } catch (err) {
+      toast.error('Não foi possível registrar a entrega.', extrairMensagemErro(err))
     }
   }
 

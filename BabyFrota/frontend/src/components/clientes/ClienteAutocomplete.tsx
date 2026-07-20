@@ -3,6 +3,7 @@ import { Search, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { useClientes } from '@/features/clientes/api'
 import type { Cliente } from '@/features/clientes/types'
+import { useDebouncedValue } from '@/hooks/use-debounced-value'
 
 interface ClienteAutocompleteProps {
   clienteSelecionado: Cliente | null
@@ -12,9 +13,10 @@ interface ClienteAutocompleteProps {
 /** Busca de cliente por nome com resultados em dropdown — evita carregar a lista inteira. */
 export function ClienteAutocomplete({ clienteSelecionado, onSelecionar }: ClienteAutocompleteProps) {
   const [busca, setBusca] = useState('')
-  const buscaValida = busca.trim().length >= 2
-  const { data, isFetching } = useClientes({ nome: buscaValida ? busca : undefined, tamanhoPagina: 8 })
-  const mostrarLista = buscaValida && !clienteSelecionado
+  const buscaAtrasada = useDebouncedValue(busca, 400)
+  const buscaValida = buscaAtrasada.trim().length >= 2
+  const { data, isFetching } = useClientes({ nome: buscaValida ? buscaAtrasada : undefined, tamanhoPagina: 8 })
+  const mostrarLista = busca.trim().length >= 2 && !clienteSelecionado
 
   if (clienteSelecionado) {
     return (

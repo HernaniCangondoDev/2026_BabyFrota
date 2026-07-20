@@ -24,6 +24,8 @@ import {
   useTiposCarrinho,
 } from '@/features/tipos-carrinho/api'
 import type { TipoCarrinho } from '@/features/tipos-carrinho/types'
+import { toast } from '@/stores/toast-store'
+import { extrairMensagemErro } from '@/lib/utils'
 
 const schema = z.object({
   descricao: z.string().min(2, 'Informe ao menos 2 caracteres'),
@@ -56,17 +58,28 @@ export function TiposCarrinhoPage() {
   }
 
   async function onSubmit(values: FormValues) {
-    if (editando) {
-      await atualizar.mutateAsync({ id: editando.id, payload: values })
-    } else {
-      await criar.mutateAsync(values)
+    try {
+      if (editando) {
+        await atualizar.mutateAsync({ id: editando.id, payload: values })
+        toast.success('Tipo de carrinho atualizado com sucesso.')
+      } else {
+        await criar.mutateAsync(values)
+        toast.success('Tipo de carrinho cadastrado com sucesso.')
+      }
+      setModalAberto(false)
+    } catch (err) {
+      toast.error('Não foi possível salvar o tipo de carrinho.', extrairMensagemErro(err))
     }
-    setModalAberto(false)
   }
 
   async function onExcluir(item: TipoCarrinho) {
     if (!confirm(`Excluir o tipo de carrinho "${item.descricao}"?`)) return
-    await excluir.mutateAsync(item.id)
+    try {
+      await excluir.mutateAsync(item.id)
+      toast.success('Tipo de carrinho excluído com sucesso.')
+    } catch (err) {
+      toast.error('Não foi possível excluir o tipo de carrinho.', extrairMensagemErro(err))
+    }
   }
 
   return (

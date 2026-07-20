@@ -21,6 +21,11 @@ function lembrarBaseUrl(url: string) {
 
 export const api = axios.create({
   baseURL: baseUrlAtual(),
+  // Sem isto, uma requisição que trava do lado do servidor (ex.: query pesada) nunca falha —
+  // fica "pendente" indefinidamente. Como o navegador limita o nº de conexões simultâneas por
+  // origem (~6), algumas poucas chamadas penduradas bastam para "engasgar" o resto do app inteiro
+  // (todas as outras páginas ficam esperando uma conexão livre = parecem carregar para sempre).
+  timeout: 25_000,
 })
 
 api.interceptors.request.use((config) => {
@@ -46,7 +51,9 @@ api.interceptors.response.use(
 
     // Sem "response" = a requisição nem chegou a um servidor (porta errada, API caída, etc.).
     // Se ainda não tentámos a URL alternativa, troca e repete a chamada uma única vez.
-    const semResposta = !error.response
+    // Importante: um timeout (error.code === 'ECONNABORTED') também não tem "response", mas nesse
+    // caso o servidor certo respondeu devagar — trocar de porta não ajuda e só dobra a espera.
+    const semResposta = !error.response && error.code !== 'ECONNABORTED'
     const urlAlternativa = api.defaults.baseURL === PRIMARY_URL ? FALLBACK_URL : PRIMARY_URL
 
     if (semResposta && config && !config._tentouUrlAlternativa) {

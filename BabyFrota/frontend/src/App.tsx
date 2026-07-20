@@ -3,7 +3,6 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
 import { LoginPage } from '@/pages/LoginPage'
 import { DashboardPage } from '@/pages/DashboardPage'
-import { PlaceholderPage } from '@/pages/PlaceholderPage'
 import { TiposCarrinhoPage } from '@/pages/cadastros/TiposCarrinhoPage'
 import { UsuariosPage } from '@/pages/cadastros/UsuariosPage'
 import { ClientesPage } from '@/pages/cadastros/ClientesPage'
@@ -14,6 +13,9 @@ import { FechamentoCaixaPage } from '@/pages/caixa/FechamentoCaixaPage'
 import { SuprimentoSangriaPage } from '@/pages/caixa/SuprimentoSangriaPage'
 import { EntregaPage } from '@/pages/locacao/EntregaPage'
 import { TrocaDevolucaoPage } from '@/pages/locacao/TrocaDevolucaoPage'
+import { RelatorioClientesPage } from '@/pages/relatorios/RelatorioClientesPage'
+import { HistoricoLocacoesPage } from '@/pages/relatorios/HistoricoLocacoesPage'
+import { EtiquetasPage } from '@/pages/EtiquetasPage'
 
 function App() {
   return (
@@ -37,9 +39,9 @@ function App() {
           <Route path="/caixa/fechamento" element={<FechamentoCaixaPage />} />
           <Route path="/caixa/suprimento-sangria" element={<SuprimentoSangriaPage />} />
 
-          <Route path="/etiquetas" element={<PlaceholderPage title="Geração de Etiquetas" />} />
-          <Route path="/relatorios/clientes" element={<PlaceholderPage title="Relatório de Clientes" />} />
-          <Route path="/relatorios/historico" element={<PlaceholderPage title="Histórico de Locações" />} />
+          <Route path="/etiquetas" element={<EtiquetasPage />} />
+          <Route path="/relatorios/clientes" element={<RelatorioClientesPage />} />
+          <Route path="/relatorios/historico" element={<HistoricoLocacoesPage />} />
         </Route>
       </Route>
 

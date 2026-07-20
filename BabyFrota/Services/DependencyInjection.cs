@@ -6,6 +6,7 @@ using BabyFrota.Services.Clientes;
 using BabyFrota.Services.Dashboard;
 using BabyFrota.Services.Empresas;
 using BabyFrota.Services.Locacoes;
+using BabyFrota.Services.Relatorios;
 using BabyFrota.Services.Seed;
 using BabyFrota.Services.Usuarios;
 using Microsoft.Extensions.Configuration;
@@ -32,6 +33,7 @@ public static class DependencyInjection
         services.AddScoped<IEmpresaService, EmpresaService>();
         services.AddScoped<ICaixaService, CaixaService>();
         services.AddScoped<ILocacaoService, LocacaoService>();
+        services.AddScoped<IRelatorioService, RelatorioService>();
 
         services.AddHttpClient("ViaCep", client =>
         {

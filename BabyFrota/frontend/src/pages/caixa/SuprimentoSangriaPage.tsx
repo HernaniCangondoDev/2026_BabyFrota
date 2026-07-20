@@ -15,7 +15,8 @@ import {
   useSangrias,
   useSuprimentos,
 } from '@/features/caixa/api'
-import { formatarDataHora, formatarMoeda } from '@/lib/utils'
+import { extrairMensagemErro, formatarDataHora, formatarMoeda } from '@/lib/utils'
+import { toast } from '@/stores/toast-store'
 
 const schema = z.object({
   valor: z.coerce.number().positive('Informe um valor maior que zero'),
@@ -25,9 +26,13 @@ type FormValues = z.infer<typeof schema>
 function FormularioValor({
   onConfirmar,
   rotulo,
+  mensagemSucesso,
+  mensagemErro,
 }: {
   onConfirmar: (valor: number) => Promise<unknown>
   rotulo: string
+  mensagemSucesso: string
+  mensagemErro: string
 }) {
   const {
     register,
@@ -37,8 +42,13 @@ function FormularioValor({
   } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { valor: 0 } })
 
   async function onSubmit(values: FormValues) {
-    await onConfirmar(values.valor)
-    reset({ valor: 0 })
+    try {
+      await onConfirmar(values.valor)
+      reset({ valor: 0 })
+      toast.success(mensagemSucesso)
+    } catch (err) {
+      toast.error(mensagemErro, extrairMensagemErro(err))
+    }
   }
 
   return (
@@ -86,7 +96,12 @@ export function SuprimentoSangriaPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <FormularioValor rotulo="suprimento" onConfirmar={(valor) => registrarSuprimento.mutateAsync(valor)} />
+              <FormularioValor
+                rotulo="suprimento"
+                onConfirmar={(valor) => registrarSuprimento.mutateAsync(valor)}
+                mensagemSucesso="Suprimento lançado com sucesso."
+                mensagemErro="Não foi possível lançar o suprimento."
+              />
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -122,7 +137,12 @@ export function SuprimentoSangriaPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <FormularioValor rotulo="sangria" onConfirmar={(valor) => registrarSangria.mutateAsync(valor)} />
+              <FormularioValor
+                rotulo="sangria"
+                onConfirmar={(valor) => registrarSangria.mutateAsync(valor)}
+                mensagemSucesso="Sangria lançada com sucesso."
+                mensagemErro="Não foi possível lançar a sangria."
+              />
               <Table>
                 <TableHeader>
                   <TableRow>

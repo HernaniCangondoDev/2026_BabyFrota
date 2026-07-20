@@ -28,7 +28,8 @@ import {
   useTrocarCarrinho,
 } from '@/features/locacoes/api'
 import type { Locacao } from '@/features/locacoes/types'
-import { formatarDataHora, formatarMoeda } from '@/lib/utils'
+import { extrairMensagemErro, formatarDataHora, formatarMoeda } from '@/lib/utils'
+import { toast } from '@/stores/toast-store'
 
 const pagamentoSchema = z.object({
   formaRecebimentoId: z.coerce.number().min(1, 'Selecione a forma'),
@@ -68,8 +69,13 @@ export function TrocaDevolucaoPage() {
 
   async function confirmarTroca() {
     if (!locacaoTroca || !novoCarrinhoId) return
-    await trocarCarrinho.mutateAsync({ locacaoId: locacaoTroca.id, payload: { novoCarrinhoId } })
-    setLocacaoTroca(null)
+    try {
+      await trocarCarrinho.mutateAsync({ locacaoId: locacaoTroca.id, payload: { novoCarrinhoId } })
+      toast.success('Carrinho trocado com sucesso.')
+      setLocacaoTroca(null)
+    } catch (err) {
+      toast.error('Não foi possível trocar o carrinho.', extrairMensagemErro(err))
+    }
   }
 
   // --- Devolução ---
@@ -109,15 +115,20 @@ export function TrocaDevolucaoPage() {
 
   async function onSubmitDevolucao(values: DevolucaoFormValues) {
     if (!locacaoDevolucao) return
-    await registrarDevolucao.mutateAsync({
-      locacaoId: locacaoDevolucao.id,
-      payload: {
-        desconto: values.desconto ?? 0,
-        observacao: values.observacao || undefined,
-        pagamentos: values.pagamentos,
-      },
-    })
-    setLocacaoDevolucao(null)
+    try {
+      await registrarDevolucao.mutateAsync({
+        locacaoId: locacaoDevolucao.id,
+        payload: {
+          desconto: values.desconto ?? 0,
+          observacao: values.observacao || undefined,
+          pagamentos: values.pagamentos,
+        },
+      })
+      toast.success('Devolução registrada com sucesso.', `Cliente: ${locacaoDevolucao.clienteNome}`)
+      setLocacaoDevolucao(null)
+    } catch (err) {
+      toast.error('Não foi possível registrar a devolução.', extrairMensagemErro(err))
+    }
   }
 
   return (

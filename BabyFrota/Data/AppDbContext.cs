@@ -190,6 +190,8 @@ public partial class AppDbContext : DbContext
             entity.ToTable("Cliente");
 
             entity.HasIndex(e => e.Cdcliente, "IDX_ClienteFilhos_CDCliente");
+            entity.HasIndex(e => e.Cpf, "IX_Cliente_CPF");
+            entity.HasIndex(e => e.Nome, "IX_Cliente_Nome");
 
             entity.Property(e => e.Cdcliente).HasColumnName("CDCliente");
             entity.Property(e => e.CdusuarioAlteracao).HasColumnName("CDUsuarioAlteracao");

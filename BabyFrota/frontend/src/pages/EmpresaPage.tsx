@@ -11,6 +11,8 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { useEmpresa, useSalvarEmpresa } from '@/features/empresa/api'
 import { buscarCep } from '@/features/cep/api'
+import { toast } from '@/stores/toast-store'
+import { extrairMensagemErro } from '@/lib/utils'
 
 const schema = z.object({
   cnpj: z.string().min(11, 'CNPJ inválido'),
@@ -82,8 +84,13 @@ export function EmpresaPage() {
 
   async function onSubmit(values: FormValues) {
     setMensagemSucesso(false)
-    await salvar.mutateAsync(values)
-    setMensagemSucesso(true)
+    try {
+      await salvar.mutateAsync(values)
+      setMensagemSucesso(true)
+      toast.success('Dados da empresa salvos com sucesso.')
+    } catch (err) {
+      toast.error('Não foi possível salvar os dados da empresa.', extrairMensagemErro(err))
+    }
   }
 
   return (

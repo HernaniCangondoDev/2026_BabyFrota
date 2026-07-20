@@ -20,7 +20,7 @@ export function Topbar() {
   const data = agora.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
 
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-card px-6">
+    <header className="flex h-16 items-center justify-between border-b bg-card px-6 print:hidden">
       <div>
         <p className="text-sm font-semibold tabular-nums">{hora}</p>
         <p className="text-xs text-muted-foreground">{data}</p>

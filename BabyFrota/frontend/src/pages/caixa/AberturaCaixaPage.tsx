@@ -10,7 +10,8 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useAbrirCaixa, useCaixaAberto } from '@/features/caixa/api'
-import { formatarDataHora, formatarMoeda } from '@/lib/utils'
+import { extrairMensagemErro, formatarDataHora, formatarMoeda } from '@/lib/utils'
+import { toast } from '@/stores/toast-store'
 
 const schema = z.object({
   suprimentoInicial: z.coerce.number().min(0, 'Valor inválido'),
@@ -30,8 +31,9 @@ export function AberturaCaixaPage() {
   async function onSubmit(values: FormValues) {
     try {
       await abrir.mutateAsync(values)
-    } catch {
-      // erro exibido abaixo via abrir.isError
+      toast.success('Caixa aberto com sucesso.')
+    } catch (err) {
+      toast.error('Não foi possível abrir o caixa.', extrairMensagemErro(err))
     }
   }
 

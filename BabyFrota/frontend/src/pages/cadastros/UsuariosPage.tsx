@@ -25,6 +25,9 @@ import {
   useUsuarios,
 } from '@/features/usuarios/api'
 import type { Usuario } from '@/features/usuarios/types'
+import { toast } from '@/stores/toast-store'
+import { extrairMensagemErro } from '@/lib/utils'
+import { useDebouncedValue } from '@/hooks/use-debounced-value'
 
 function buildSchema(exigirSenha: boolean) {
   return z.object({
@@ -46,9 +49,10 @@ const TAMANHO_PAGINA_PADRAO = 10
 
 export function UsuariosPage() {
   const [busca, setBusca] = useState('')
+  const buscaAtrasada = useDebouncedValue(busca, 400)
   const [pagina, setPagina] = useState(1)
   const [tamanhoPagina, setTamanhoPagina] = useState(TAMANHO_PAGINA_PADRAO)
-  const { data, isLoading } = useUsuarios({ nome: busca || undefined, pagina, tamanhoPagina })
+  const { data, isLoading } = useUsuarios({ nome: buscaAtrasada || undefined, pagina, tamanhoPagina })
   const { data: perfis } = usePerfis()
 
   const criar = useCriarUsuario()
@@ -99,17 +103,28 @@ export function UsuariosPage() {
 
   async function onSubmit(values: FormValues) {
     const payload = { ...values, senha: values.senha || undefined }
-    if (editando) {
-      await atualizar.mutateAsync({ id: editando.id, payload })
-    } else {
-      await criar.mutateAsync(payload)
+    try {
+      if (editando) {
+        await atualizar.mutateAsync({ id: editando.id, payload })
+        toast.success('Usuário atualizado com sucesso.')
+      } else {
+        await criar.mutateAsync(payload)
+        toast.success('Usuário cadastrado com sucesso.')
+      }
+      setModalAberto(false)
+    } catch (err) {
+      toast.error('Não foi possível salvar o usuário.', extrairMensagemErro(err))
     }
-    setModalAberto(false)
   }
 
   async function onInativar(usuario: Usuario) {
     if (!confirm(`Inativar o usuário "${usuario.nome}"? Ele não conseguirá mais acessar o sistema.`)) return
-    await inativar.mutateAsync(usuario.id)
+    try {
+      await inativar.mutateAsync(usuario.id)
+      toast.success('Usuário inativado com sucesso.')
+    } catch (err) {
+      toast.error('Não foi possível inativar o usuário.', extrairMensagemErro(err))
+    }
   }
 
   const columns: DataTableColumn<Usuario>[] = [
