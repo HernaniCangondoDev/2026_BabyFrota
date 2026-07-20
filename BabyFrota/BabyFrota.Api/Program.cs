@@ -74,7 +74,15 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseHttpsRedirection();
+// Em Development, o front (Vite) chama a API em HTTP puro (http://localhost:5025).
+// Forçar redirect para HTTPS aqui quebraria a chamada: o browser seguiria o redirect
+// para https://localhost:7017 (porta diferente => CORS falha, ou certificado dev não
+// confiável => request bloqueada silenciosamente), e o front recebe um erro de rede
+// sem "response" — que aparecia disfarçado de "credenciais inválidas".
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseCors("Frontend");
 

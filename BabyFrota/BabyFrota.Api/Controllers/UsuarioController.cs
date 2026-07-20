@@ -1,4 +1,5 @@
-﻿using BabyFrota.DTOs.Usuarios;
+﻿using BabyFrota.DTOs.Common;
+using BabyFrota.DTOs.Usuarios;
 using BabyFrota.Services.Usuarios;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,8 +19,10 @@ public class UsuarioController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<UsuarioDto>>> Listar([FromQuery] string? nome, [FromQuery] string? cpf, CancellationToken ct)
-        => Ok(await _service.ListarAsync(nome, cpf, ct));
+    public async Task<ActionResult<PagedResult<UsuarioDto>>> Listar(
+        [FromQuery] string? nome, [FromQuery] string? cpf,
+        [FromQuery] int pagina = 1, [FromQuery] int tamanhoPagina = 10, CancellationToken ct = default)
+        => Ok(await _service.ListarAsync(nome, cpf, pagina, tamanhoPagina, ct));
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<UsuarioDto>> ObterPorId(int id, CancellationToken ct)

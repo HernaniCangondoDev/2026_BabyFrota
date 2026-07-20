@@ -1,8 +1,26 @@
-import axios from 'axios'
+import axios, { type InternalAxiosRequestConfig } from 'axios'
 import { useAuthStore } from '@/store/auth-store'
 
+// A API .NET pode estar a correr em portas diferentes conforme o perfil de arranque
+// usado no Visual Studio: "https"/Kestrel (5025 http / 7017 https) ou "IIS Express" (44372).
+// Para não obrigar a trocar o .env sempre que o perfil muda, guardamos qual porta respondeu
+// por último (nesta aba do browser) e tentamos a outra automaticamente se a primeira falhar
+// por erro de rede (ex.: ERR_CONNECTION_REFUSED porque a API está no outro perfil).
+const PRIMARY_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5025/api'
+const FALLBACK_URL = import.meta.env.VITE_API_URL_FALLBACK ?? 'https://localhost:44372/api'
+
+const STORAGE_KEY = 'bf_api_base_url'
+
+function baseUrlAtual(): string {
+  return sessionStorage.getItem(STORAGE_KEY) ?? PRIMARY_URL
+}
+
+function lembrarBaseUrl(url: string) {
+  sessionStorage.setItem(STORAGE_KEY, url)
+}
+
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:5025/api',
+  baseURL: baseUrlAtual(),
 })
 
 api.interceptors.request.use((config) => {
@@ -13,12 +31,32 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+interface ConfigComRetry extends InternalAxiosRequestConfig {
+  _tentouUrlAlternativa?: boolean
+}
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       useAuthStore.getState().logout()
     }
+
+    const config = error.config as ConfigComRetry | undefined
+
+    // Sem "response" = a requisição nem chegou a um servidor (porta errada, API caída, etc.).
+    // Se ainda não tentámos a URL alternativa, troca e repete a chamada uma única vez.
+    const semResposta = !error.response
+    const urlAlternativa = api.defaults.baseURL === PRIMARY_URL ? FALLBACK_URL : PRIMARY_URL
+
+    if (semResposta && config && !config._tentouUrlAlternativa) {
+      config._tentouUrlAlternativa = true
+      config.baseURL = urlAlternativa
+      api.defaults.baseURL = urlAlternativa
+      lembrarBaseUrl(urlAlternativa)
+      return api(config)
+    }
+
     return Promise.reject(error)
   },
 )

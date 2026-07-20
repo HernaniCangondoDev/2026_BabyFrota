@@ -1,5 +1,6 @@
 ﻿using BabyFrota.Data;
 using BabyFrota.Domain.Entities;
+using BabyFrota.DTOs.Common;
 using BabyFrota.DTOs.Usuarios;
 using BabyFrota.Services.Auth;
 using Microsoft.EntityFrameworkCore;
@@ -17,9 +18,13 @@ public class UsuarioService : IUsuarioService
         _passwordHasher = passwordHasher;
     }
 
-    public async Task<List<UsuarioDto>> ListarAsync(string? nome, string? cpf, CancellationToken ct = default)
+    public async Task<PagedResult<UsuarioDto>> ListarAsync(
+        string? nome, string? cpf, int pagina, int tamanhoPagina, CancellationToken ct = default)
     {
-        var query = _db.Usuarios.Include(u => u.CdperfilNavigation).AsQueryable();
+        pagina = pagina < 1 ? 1 : pagina;
+        tamanhoPagina = tamanhoPagina is < 1 or > 500 ? 10 : tamanhoPagina;
+
+        var query = _db.Usuarios.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(nome))
             query = query.Where(u => u.Nome.Contains(nome));
@@ -27,9 +32,13 @@ public class UsuarioService : IUsuarioService
         if (!string.IsNullOrWhiteSpace(cpf))
             query = query.Where(u => u.Cpf != null && u.Cpf.Contains(cpf));
 
+        var total = await query.CountAsync(ct);
+
         // Projeção inline (não uma chamada a método) para o EF Core conseguir traduzir em SQL.
-        return await query
+        var itens = await query
             .OrderBy(u => u.Nome)
+            .Skip((pagina - 1) * tamanhoPagina)
+            .Take(tamanhoPagina)
             .Select(u => new UsuarioDto
             {
                 Id = u.Cdusuario,
@@ -44,6 +53,14 @@ public class UsuarioService : IUsuarioService
                 DataCadastro = u.DataCadastro,
             })
             .ToListAsync(ct);
+
+        return new PagedResult<UsuarioDto>
+        {
+            Itens = itens,
+            Pagina = pagina,
+            TamanhoPagina = tamanhoPagina,
+            TotalRegistros = total,
+        };
     }
 
     public async Task<UsuarioDto?> ObterPorIdAsync(int id, CancellationToken ct = default)

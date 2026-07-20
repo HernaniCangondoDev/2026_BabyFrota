@@ -2,14 +2,13 @@ import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Pencil, Plus, Search, UserX } from 'lucide-react'
+import { Pencil, Plus, UserX } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Select } from '@/components/ui/select'
-import { Card, CardContent } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -17,7 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import {
   useAtualizarUsuario,
   useCriarUsuario,
@@ -43,9 +42,13 @@ function buildSchema(exigirSenha: boolean) {
 }
 type FormValues = z.infer<ReturnType<typeof buildSchema>>
 
+const TAMANHO_PAGINA_PADRAO = 10
+
 export function UsuariosPage() {
   const [busca, setBusca] = useState('')
-  const { data: usuarios, isLoading } = useUsuarios({ nome: busca || undefined })
+  const [pagina, setPagina] = useState(1)
+  const [tamanhoPagina, setTamanhoPagina] = useState(TAMANHO_PAGINA_PADRAO)
+  const { data, isLoading } = useUsuarios({ nome: busca || undefined, pagina, tamanhoPagina })
   const { data: perfis } = usePerfis()
 
   const criar = useCriarUsuario()
@@ -62,6 +65,16 @@ export function UsuariosPage() {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema) })
+
+  function onChangeBusca(valor: string) {
+    setBusca(valor)
+    setPagina(1)
+  }
+
+  function onChangeTamanhoPagina(valor: number) {
+    setTamanhoPagina(valor)
+    setPagina(1)
+  }
 
   function abrirNovo() {
     setEditando(null)
@@ -99,6 +112,35 @@ export function UsuariosPage() {
     await inativar.mutateAsync(usuario.id)
   }
 
+  const columns: DataTableColumn<Usuario>[] = [
+    { header: 'Nome', cell: (u) => <span className="font-medium">{u.nome}</span>, exportValue: (u) => u.nome },
+    { header: 'Email', cell: (u) => <span className="text-muted-foreground">{u.email}</span>, exportValue: (u) => u.email },
+    {
+      header: 'Perfil',
+      cell: (u) => <Badge variant="secondary">{u.perfilNome}</Badge>,
+      exportValue: (u) => u.perfilNome,
+    },
+    {
+      header: 'Status',
+      cell: (u) => <Badge variant={u.ativo ? 'success' : 'outline'}>{u.ativo ? 'Ativo' : 'Inativo'}</Badge>,
+      exportValue: (u) => (u.ativo ? 'Ativo' : 'Inativo'),
+    },
+    {
+      header: 'Ações',
+      className: 'w-32 text-right',
+      cell: (u) => (
+        <div className="text-right">
+          <Button variant="ghost" size="icon" onClick={() => abrirEdicao(u)} title="Editar">
+            <Pencil className="size-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => onInativar(u)} title="Inativar" disabled={!u.ativo}>
+            <UserX className="size-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ]
+
   return (
     <>
       <PageHeader
@@ -111,62 +153,23 @@ export function UsuariosPage() {
         }
       />
 
-      <div className="mb-4 flex max-w-sm items-center gap-2">
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Buscar por nome..." className="pl-8" value={busca} onChange={(e) => setBusca(e.target.value)} />
-        </div>
-      </div>
-
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Perfil</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="w-32 text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading && (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">Carregando...</TableCell>
-                </TableRow>
-              )}
-              {!isLoading && usuarios?.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">Nenhum usuário encontrado.</TableCell>
-                </TableRow>
-              )}
-              {usuarios?.map((usuario) => (
-                <TableRow key={usuario.id}>
-                  <TableCell className="font-medium">{usuario.nome}</TableCell>
-                  <TableCell className="text-muted-foreground">{usuario.email}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{usuario.perfilNome}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={usuario.ativo ? 'success' : 'outline'}>
-                      {usuario.ativo ? 'Ativo' : 'Inativo'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => abrirEdicao(usuario)} title="Editar">
-                      <Pencil className="size-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => onInativar(usuario)} title="Inativar" disabled={!usuario.ativo}>
-                      <UserX className="size-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <DataTable
+        columns={columns}
+        data={data?.itens ?? []}
+        rowKey={(u) => u.id}
+        isLoading={isLoading}
+        searchValue={busca}
+        onSearchChange={onChangeBusca}
+        searchPlaceholder="Buscar por nome..."
+        emptyMessage="Nenhum usuário encontrado."
+        pagina={data?.pagina ?? pagina}
+        totalPaginas={data?.totalPaginas ?? 0}
+        totalRegistros={data?.totalRegistros ?? 0}
+        tamanhoPagina={data?.tamanhoPagina ?? tamanhoPagina}
+        onPageChange={setPagina}
+        onTamanhoPaginaChange={onChangeTamanhoPagina}
+        exportFileName="usuarios"
+      />
 
       <Dialog open={modalAberto} onOpenChange={setModalAberto}>
         <DialogContent className="max-w-xl">

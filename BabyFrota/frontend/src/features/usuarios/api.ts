@@ -1,16 +1,28 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
+import type { PagedResult } from '@/types/paged-result'
 import type { Perfil, Usuario, UsuarioUpsert } from './types'
 
 const QUERY_KEY = ['usuarios']
 
-async function listar(filtro: { nome?: string; cpf?: string }): Promise<Usuario[]> {
-  const { data } = await api.get<Usuario[]>('/usuario', { params: filtro })
+interface Filtro {
+  nome?: string
+  cpf?: string
+  pagina?: number
+  tamanhoPagina?: number
+}
+
+async function listar(filtro: Filtro): Promise<PagedResult<Usuario>> {
+  const { data } = await api.get<PagedResult<Usuario>>('/usuario', { params: filtro })
   return data
 }
 
-export function useUsuarios(filtro: { nome?: string; cpf?: string } = {}) {
-  return useQuery({ queryKey: [...QUERY_KEY, filtro], queryFn: () => listar(filtro) })
+export function useUsuarios(filtro: Filtro = {}) {
+  return useQuery({
+    queryKey: [...QUERY_KEY, filtro],
+    queryFn: () => listar(filtro),
+    placeholderData: keepPreviousData,
+  })
 }
 
 export function usePerfis() {

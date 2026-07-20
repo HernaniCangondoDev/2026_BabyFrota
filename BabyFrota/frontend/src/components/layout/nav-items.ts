@@ -23,12 +23,20 @@ export interface NavItem {
 }
 
 export interface NavGroup {
-  label: string
+  /** null = grupo "fixo" sem cabeçalho (usado para o Dashboard, sempre no topo). */
+  label: string | null
   items: NavItem[]
 }
 
-/** Espelha o menu/submenu do sistema legado (Default.aspx), reorganizado em grupos modernos. */
+/**
+ * Espelha o menu/submenu do sistema legado (Default.aspx), reorganizado em grupos modernos.
+ * Dashboard fica sempre em primeiro; os relatórios/BI ficam por último.
+ */
 export const navGroups: NavGroup[] = [
+  {
+    label: null,
+    items: [{ label: 'Dashboard', to: '/', icon: LayoutDashboard }],
+  },
   {
     label: 'Cadastros',
     items: [
@@ -57,7 +65,6 @@ export const navGroups: NavGroup[] = [
   {
     label: 'Relatórios & BI',
     items: [
-      { label: 'Dashboard', to: '/', icon: LayoutDashboard },
       { label: 'Etiquetas', to: '/etiquetas', icon: Printer },
       { label: 'Relatório de Clientes', to: '/relatorios/clientes', icon: FileBarChart },
       { label: 'Histórico de Locações', to: '/relatorios/historico', icon: History },

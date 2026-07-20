@@ -6,6 +6,14 @@ import { DashboardPage } from '@/pages/DashboardPage'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
 import { TiposCarrinhoPage } from '@/pages/cadastros/TiposCarrinhoPage'
 import { UsuariosPage } from '@/pages/cadastros/UsuariosPage'
+import { ClientesPage } from '@/pages/cadastros/ClientesPage'
+import { CarrinhosPage } from '@/pages/cadastros/CarrinhosPage'
+import { EmpresaPage } from '@/pages/EmpresaPage'
+import { AberturaCaixaPage } from '@/pages/caixa/AberturaCaixaPage'
+import { FechamentoCaixaPage } from '@/pages/caixa/FechamentoCaixaPage'
+import { SuprimentoSangriaPage } from '@/pages/caixa/SuprimentoSangriaPage'
+import { EntregaPage } from '@/pages/locacao/EntregaPage'
+import { TrocaDevolucaoPage } from '@/pages/locacao/TrocaDevolucaoPage'
 
 function App() {
   return (
@@ -16,18 +24,18 @@ function App() {
         <Route element={<AppLayout />}>
           <Route path="/" element={<DashboardPage />} />
 
-          <Route path="/clientes" element={<PlaceholderPage title="Clientes" />} />
+          <Route path="/clientes" element={<ClientesPage />} />
           <Route path="/usuarios" element={<UsuariosPage />} />
-          <Route path="/carrinhos" element={<PlaceholderPage title="Carrinhos" />} />
+          <Route path="/carrinhos" element={<CarrinhosPage />} />
           <Route path="/tipos-carrinho" element={<TiposCarrinhoPage />} />
-          <Route path="/empresa" element={<PlaceholderPage title="Empresa" />} />
+          <Route path="/empresa" element={<EmpresaPage />} />
 
-          <Route path="/locacao/entrega" element={<PlaceholderPage title="Entrega" />} />
-          <Route path="/locacao/troca-devolucao" element={<PlaceholderPage title="Troca e Devolução" />} />
+          <Route path="/locacao/entrega" element={<EntregaPage />} />
+          <Route path="/locacao/troca-devolucao" element={<TrocaDevolucaoPage />} />
 
-          <Route path="/caixa/abertura" element={<PlaceholderPage title="Abertura de Caixa" />} />
-          <Route path="/caixa/fechamento" element={<PlaceholderPage title="Fechamento de Caixa" />} />
-          <Route path="/caixa/suprimento-sangria" element={<PlaceholderPage title="Suprimento e Sangria" />} />
+          <Route path="/caixa/abertura" element={<AberturaCaixaPage />} />
+          <Route path="/caixa/fechamento" element={<FechamentoCaixaPage />} />
+          <Route path="/caixa/suprimento-sangria" element={<SuprimentoSangriaPage />} />
 
           <Route path="/etiquetas" element={<PlaceholderPage title="Geração de Etiquetas" />} />
           <Route path="/relatorios/clientes" element={<PlaceholderPage title="Relatório de Clientes" />} />
