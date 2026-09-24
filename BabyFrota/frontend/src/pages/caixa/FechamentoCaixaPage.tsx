@@ -1,45 +1,38 @@
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { AxiosError } from 'axios'
+import { Link } from 'react-router-dom'
 import { AlertTriangle, Landmark } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { useCaixaAberto, useFecharCaixa } from '@/features/caixa/api'
+import { FORMA_DINHEIRO_ID } from '@/features/caixa/types'
+import { useFormasRecebimento } from '@/features/locacoes/api'
 import { extrairMensagemErro, formatarDataHora, formatarMoeda } from '@/lib/utils'
 import { toast } from '@/stores/toast-store'
 
-const schema = z.object({
-  valorFechamento: z.coerce.number().min(0, 'Valor inválido'),
-})
-type FormValues = z.infer<typeof schema>
+function Linha({ rotulo, valor, destaque }: { rotulo: string; valor: string; destaque?: boolean }) {
+  return (
+    <>
+      <p className={destaque ? 'font-medium text-foreground' : 'text-muted-foreground'}>{rotulo}</p>
+      <p className={destaque ? 'text-right font-medium text-foreground' : 'text-right text-foreground'}>{valor}</p>
+    </>
+  )
+}
 
+/**
+ * Fechamento no fluxo do legado: o sistema apura tudo e o operador só confirma, sem digitar valor.
+ * O servidor grava o total vendido em ValorFechamento, como o legado fazia.
+ */
 export function FechamentoCaixaPage() {
   const { data: caixaAberto, isLoading } = useCaixaAberto()
+  const { data: formas } = useFormasRecebimento()
   const fechar = useFecharCaixa()
   const [fechado, setFechado] = useState(false)
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    formState: { errors, isSubmitting },
-  } = useForm<FormValues>({ resolver: zodResolver(schema) })
-
-  const valorFechamento = watch('valorFechamento')
-  const diferenca =
-    caixaAberto && typeof valorFechamento === 'number' && !Number.isNaN(valorFechamento)
-      ? valorFechamento - caixaAberto.saldoAtual
-      : null
-
-  async function onSubmit(values: FormValues) {
+  async function confirmarFechamento() {
     if (!confirm('Confirma o fechamento do caixa? Essa ação não pode ser desfeita.')) return
     try {
-      await fechar.mutateAsync(values)
+      await fechar.mutateAsync()
       setFechado(true)
       toast.success('Caixa fechado com sucesso.')
     } catch (err) {
@@ -47,9 +40,11 @@ export function FechamentoCaixaPage() {
     }
   }
 
+  const pendentes = caixaAberto?.locacoesPendentes ?? 0
+
   return (
     <>
-      <PageHeader title="Fechamento de Caixa" description="Confere o saldo calculado com o valor contado e encerra o caixa do dia." />
+      <PageHeader title="Fechamento de Caixa" description="Confere o resumo apurado pelo sistema e encerra o caixa." />
 
       <Card className="max-w-lg">
         <CardContent className="space-y-4 pt-6">
@@ -73,50 +68,62 @@ export function FechamentoCaixaPage() {
                   Aberto por <span className="text-foreground">{caixaAberto.usuarioAberturaNome}</span> em{' '}
                   {formatarDataHora(caixaAberto.dataAbertura)}
                 </p>
-                <div className="grid grid-cols-2 gap-x-4 pt-1">
-                  <p className="text-muted-foreground">Suprimento inicial</p>
-                  <p className="text-right text-foreground">{formatarMoeda(caixaAberto.suprimentoInicial)}</p>
-                  <p className="text-muted-foreground">Locações</p>
-                  <p className="text-right text-foreground">{formatarMoeda(caixaAberto.totalLocacoes)}</p>
-                  <p className="text-muted-foreground">Suprimentos</p>
-                  <p className="text-right text-foreground">{formatarMoeda(caixaAberto.totalSuprimentos)}</p>
-                  <p className="text-muted-foreground">Sangrias</p>
-                  <p className="text-right text-foreground">-{formatarMoeda(caixaAberto.totalSangrias)}</p>
-                  <p className="font-medium text-foreground">Saldo calculado</p>
-                  <p className="text-right font-medium text-foreground">{formatarMoeda(caixaAberto.saldoAtual)}</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 pt-1">
+                  <Linha rotulo="Suprimento inicial" valor={formatarMoeda(caixaAberto.suprimentoInicial)} />
+                  <Linha rotulo="Reforços (suprimentos)" valor={formatarMoeda(caixaAberto.totalSuprimentos)} />
+                  <Linha rotulo="Sangrias" valor={`-${formatarMoeda(caixaAberto.totalSangrias)}`} />
+                </div>
+
+                <p className="pt-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">Vendas por forma</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+                  {[...(formas ?? [])]
+                    .sort((a, b) => a.id - b.id)
+                    .map((f) => (
+                      <Linha
+                        key={f.id}
+                        rotulo={f.id === FORMA_DINHEIRO_ID ? `${f.nome} (líquido de troco)` : f.nome}
+                        valor={formatarMoeda(caixaAberto.porForma[String(f.id)] ?? 0)}
+                      />
+                    ))}
+                </div>
+
+                <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 border-t pt-2">
+                  <Linha rotulo="Total vendido" valor={formatarMoeda(caixaAberto.totalLocacoes)} destaque />
+                  <Linha rotulo="Saldo em dinheiro" valor={formatarMoeda(caixaAberto.saldoEmDinheiro)} destaque />
                 </div>
               </div>
 
-              <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
-                <div className="space-y-1.5">
-                  <Label htmlFor="valorFechamento">Valor contado no caixa</Label>
-                  <Input id="valorFechamento" type="number" step="0.01" {...register('valorFechamento')} />
-                  {errors.valorFechamento && (
-                    <p className="text-xs text-destructive">{errors.valorFechamento.message}</p>
-                  )}
-                </div>
+              {pendentes > 0 && (
+                <p className="flex items-start gap-2 rounded-md bg-amber-50 p-2 text-sm text-amber-800">
+                  <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                  <span>
+                    {pendentes === 1
+                      ? 'Há 1 locação sem devolução.'
+                      : `Há ${pendentes} locações sem devolução.`}{' '}
+                    O caixa só fecha depois de registrá-las em{' '}
+                    <Link to="/locacao/troca-devolucao" className="font-medium underline underline-offset-2">
+                      Troca e Devolução
+                    </Link>
+                    .
+                  </span>
+                </p>
+              )}
 
-                {diferenca !== null && diferenca !== 0 && (
-                  <p className="flex items-center gap-2 rounded-md bg-amber-50 p-2 text-sm text-amber-800">
-                    <AlertTriangle className="size-4 shrink-0" />
-                    {diferenca > 0
-                      ? `Sobra de ${formatarMoeda(diferenca)} em relação ao saldo calculado.`
-                      : `Falta de ${formatarMoeda(Math.abs(diferenca))} em relação ao saldo calculado.`}
-                  </p>
-                )}
+              {!caixaAberto.podeFechar && (
+                <p className="rounded-md bg-muted p-2 text-sm text-muted-foreground">
+                  Somente quem abriu o caixa ({caixaAberto.usuarioAberturaNome}), um Gerente ou um Administrador pode
+                  fechá-lo.
+                </p>
+              )}
 
-                {fechar.isError && (
-                  <p className="rounded-md bg-destructive/10 p-2 text-sm text-destructive">
-                    {fechar.error instanceof AxiosError
-                      ? (fechar.error.response?.data?.detail ?? 'Não foi possível fechar o caixa.')
-                      : 'Não foi possível fechar o caixa.'}
-                  </p>
-                )}
-
-                <Button type="submit" disabled={isSubmitting} className="w-full">
-                  Fechar caixa
-                </Button>
-              </form>
+              <Button
+                type="button"
+                className="w-full"
+                onClick={confirmarFechamento}
+                disabled={fechar.isPending || pendentes > 0 || !caixaAberto.podeFechar}
+              >
+                Confirmar fechamento
+              </Button>
             </>
           )}
         </CardContent>

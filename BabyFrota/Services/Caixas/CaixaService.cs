@@ -1,6 +1,7 @@
 using BabyFrota.Data;
 using BabyFrota.Domain.Entities;
 using BabyFrota.DTOs.Caixa;
+using BabyFrota.Services.Common;
 using Microsoft.EntityFrameworkCore;
 
 namespace BabyFrota.Services.Caixas;
@@ -8,16 +9,18 @@ namespace BabyFrota.Services.Caixas;
 public class CaixaService : ICaixaService
 {
     private readonly AppDbContext _db;
+    private readonly ApuradorCaixa _apurador;
 
     public CaixaService(AppDbContext db)
     {
         _db = db;
+        _apurador = new ApuradorCaixa(db);
     }
 
-    public async Task<CaixaMovimentoDto?> ObterAbertoAsync(CancellationToken ct = default)
+    public async Task<CaixaMovimentoDto?> ObterAbertoAsync(int usuarioId, CancellationToken ct = default)
     {
         var aberto = await ObterEntidadeAbertaAsync(ct);
-        return aberto is null ? null : await ParaDtoAsync(aberto, ct);
+        return aberto is null ? null : await ParaDtoAsync(aberto, usuarioId, ct);
     }
 
     public async Task<CaixaMovimentoDto> AbrirAsync(int usuarioId, AberturaCaixaRequest request, CancellationToken ct = default)
@@ -36,21 +39,35 @@ public class CaixaService : ICaixaService
         _db.CaixaMovimentos.Add(caixa);
         await _db.SaveChangesAsync(ct);
 
-        return await ParaDtoAsync(caixa, ct);
+        return await ParaDtoAsync(caixa, usuarioId, ct);
     }
 
-    public async Task<CaixaMovimentoDto> FecharAsync(int usuarioId, FechamentoCaixaRequest request, CancellationToken ct = default)
+    public async Task<CaixaMovimentoDto> FecharAsync(int usuarioId, CancellationToken ct = default)
     {
         var caixa = await ObterEntidadeAbertaAsync(ct)
             ?? throw new InvalidOperationException("Não há caixa aberto para fechar.");
 
+        // O legado deixa qualquer usuário fechar o caixa de qualquer outro. Aqui só quem abriu fecha o próprio,
+        // e Gerente ou Administrador podem fechar o de outra pessoa (turno que acabou sem fechar).
+        if (!await PodeFecharAsync(caixa, usuarioId, ct))
+            throw new AcessoNegadoException("Somente quem abriu o caixa, um Gerente ou um Administrador pode fechá-lo.");
+
+        var apuracao = (await _apurador.ApurarAsync([CaixaBaseDe(caixa)], ct))[caixa.CdcaixaMovimento];
+
+        // Igual ao legado (NLocacao.TotalCaixa): o pagamento só é recebido na devolução, então fechar com
+        // carrinhos ainda na rua deixaria o dinheiro dessas locações fora do fechamento.
+        if (apuracao.LocacoesPendentes > 0)
+            throw new InvalidOperationException(
+                $"Existem {apuracao.LocacoesPendentes} devoluções pendentes. Registre as devoluções antes de fechar o caixa.");
+
         caixa.Dtfechamento = DateTime.Now;
         caixa.CdusuarioFechamento = usuarioId;
-        caixa.ValorFechamento = request.ValorFechamento;
+        // Como no legado (NCaixaMovimento.FecharCaixa), não há valor digitado: grava o total vendido apurado pelo sistema.
+        caixa.ValorFechamento = apuracao.TotalVendido;
 
         await _db.SaveChangesAsync(ct);
 
-        return await ParaDtoAsync(caixa, ct);
+        return await ParaDtoAsync(caixa, usuarioId, ct);
     }
 
     public async Task<MovimentoCaixaDto> RegistrarSuprimentoAsync(int usuarioId, decimal valor, CancellationToken ct = default)
@@ -153,19 +170,21 @@ public class CaixaService : ICaixaService
             .FirstOrDefaultAsync(ct);
     }
 
-    private async Task<CaixaMovimentoDto> ParaDtoAsync(CaixaMovimento caixa, CancellationToken ct)
+    private static CaixaBase CaixaBaseDe(CaixaMovimento caixa)
+        => new(caixa.CdcaixaMovimento, caixa.Dtabertura, caixa.SuprimentoInicial, caixa.CdusuarioAbertura);
+
+    private async Task<bool> PodeFecharAsync(CaixaMovimento caixa, int usuarioId, CancellationToken ct)
     {
-        var totalSuprimentos = await _db.Suprimentos
-            .Where(s => s.CdcaixaMovimento == caixa.CdcaixaMovimento)
-            .SumAsync(s => (decimal?)s.Valor, ct) ?? 0m;
+        if (caixa.Dtfechamento is not null)
+            return false;
 
-        var totalSangrias = await _db.Sangrias
-            .Where(s => s.CdcaixaMovimento == caixa.CdcaixaMovimento)
-            .SumAsync(s => (decimal?)s.Valor, ct) ?? 0m;
+        return caixa.CdusuarioAbertura == usuarioId
+            || PerfilUsuarioExtensions.EhSupervisor(await _db.ObterPerfilIdAsync(usuarioId, ct));
+    }
 
-        var totalLocacoes = await _db.Locacoes
-            .Where(l => l.CdcaixaMovimento == caixa.CdcaixaMovimento)
-            .SumAsync(l => (decimal?)l.ValorTotal, ct) ?? 0m;
+    private async Task<CaixaMovimentoDto> ParaDtoAsync(CaixaMovimento caixa, int usuarioId, CancellationToken ct)
+    {
+        var apuracao = (await _apurador.ApurarAsync([CaixaBaseDe(caixa)], ct))[caixa.CdcaixaMovimento];
 
         var usuarioAbertura = await _db.Usuarios
             .Where(u => u.Cdusuario == caixa.CdusuarioAbertura)
@@ -186,15 +205,19 @@ public class CaixaService : ICaixaService
             Id = caixa.CdcaixaMovimento,
             DataAbertura = caixa.Dtabertura,
             DataFechamento = caixa.Dtfechamento,
+            UsuarioAberturaId = caixa.CdusuarioAbertura,
             UsuarioAberturaNome = usuarioAbertura,
             UsuarioFechamentoNome = usuarioFechamento,
             SuprimentoInicial = caixa.SuprimentoInicial,
             ValorFechamento = caixa.ValorFechamento,
             Aberto = caixa.Dtfechamento == null,
-            TotalSuprimentos = totalSuprimentos,
-            TotalSangrias = totalSangrias,
-            TotalLocacoes = totalLocacoes,
-            SaldoAtual = caixa.SuprimentoInicial + totalLocacoes + totalSuprimentos - totalSangrias,
+            TotalSuprimentos = apuracao.Reforcos,
+            TotalSangrias = apuracao.TotalGastos,
+            TotalLocacoes = apuracao.TotalVendido,
+            PorForma = new Dictionary<int, decimal>(apuracao.PorForma),
+            LocacoesPendentes = apuracao.LocacoesPendentes,
+            SaldoEmDinheiro = apuracao.SaldoEmDinheiro,
+            PodeFechar = await PodeFecharAsync(caixa, usuarioId, ct),
         };
     }
 }

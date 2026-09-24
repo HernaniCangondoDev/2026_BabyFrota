@@ -12,6 +12,8 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    port: 5180,
+    // Falha em vez de subir noutra porta: a API só libera CORS para a origem configurada em appsettings (Cors:AllowedOrigins).
+    strictPort: true,
   },
 })

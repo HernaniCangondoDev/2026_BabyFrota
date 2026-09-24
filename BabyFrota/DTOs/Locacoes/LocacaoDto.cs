@@ -27,14 +27,12 @@ public class PagamentoRequest
     public decimal Valor { get; set; }
 }
 
+/// <summary>A entrega só reserva o carrinho: preço, desconto e pagamento são apurados na devolução.</summary>
 public class EntregaRequest
 {
     public int ClienteId { get; set; }
     public int CarrinhoId { get; set; }
-    public int TempoMinutos { get; set; }
-    public decimal Desconto { get; set; }
     public string? Observacao { get; set; }
-    public List<PagamentoRequest> Pagamentos { get; set; } = new();
 }
 
 public class LocacaoDto
@@ -76,6 +74,18 @@ public class PreviaDevolucaoDto
 {
     public int TempoMinutos { get; set; }
     public decimal Valor { get; set; }
+
+    /// <summary>O tempo passou da última faixa cadastrada e <see cref="Valor"/> é o preço dessa última faixa.</summary>
+    public bool AcimaDaTabela { get; set; }
+
+    /// <summary>Limite em minutos da última faixa; só vem preenchido quando <see cref="AcimaDaTabela"/> é verdadeiro.</summary>
+    public int? MaximoTabelaMinutos { get; set; }
+
+    /// <summary>
+    /// Soma das parcelas que a locação já tem. No fluxo atual a entrega não cobra, então só é maior que zero em locações
+    /// entregues no fluxo antigo. Conta como já pago na devolução.
+    /// </summary>
+    public decimal ValorJaRecebido { get; set; }
 }
 
 public class DevolucaoRequest

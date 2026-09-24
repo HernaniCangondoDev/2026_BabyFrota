@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using BabyFrota.DTOs.Common;
 using BabyFrota.DTOs.Locacoes;
 using BabyFrota.Services.Locacoes;
 using Microsoft.AspNetCore.Authorization;
@@ -12,10 +13,12 @@ namespace BabyFrota.Api.Controllers;
 public class LocacaoController : ControllerBase
 {
     private readonly ILocacaoService _service;
+    private readonly ILocacaoConsultaService _consulta;
 
-    public LocacaoController(ILocacaoService service)
+    public LocacaoController(ILocacaoService service, ILocacaoConsultaService consulta)
     {
         _service = service;
+        _consulta = consulta;
     }
 
     private int UsuarioIdAtual =>
@@ -33,6 +36,21 @@ public class LocacaoController : ControllerBase
     [HttpGet("formas-recebimento")]
     public async Task<ActionResult<List<FormaRecebimentoDto>>> ListarFormasRecebimento(CancellationToken ct)
         => Ok(await _service.ListarFormasRecebimentoAsync(ct));
+
+    /// <summary>GET /api/locacao/consulta — todas as locações (entregues e devolvidas) com filtros, paginadas.</summary>
+    [HttpGet("consulta")]
+    public async Task<ActionResult<PagedResult<LocacaoConsultaDto>>> Consultar([FromQuery] LocacaoConsultaFiltro filtro, CancellationToken ct)
+        => Ok(await _consulta.ConsultarAsync(filtro, ct));
+
+    /// <summary>GET /api/locacao/consulta/resumo — totais de todas as locações do mesmo filtro.</summary>
+    [HttpGet("consulta/resumo")]
+    public async Task<ActionResult<LocacaoConsultaResumoDto>> ObterResumoConsulta([FromQuery] LocacaoConsultaFiltro filtro, CancellationToken ct)
+        => Ok(await _consulta.ObterResumoAsync(filtro, ct));
+
+    /// <summary>GET /api/locacao/{id}/detalhe — pagamentos, trocas, observação e demais dados (modal de detalhes e comprovantes).</summary>
+    [HttpGet("{locacaoId:int}/detalhe")]
+    public async Task<ActionResult<LocacaoDetalheDto>> ObterDetalhe(int locacaoId, CancellationToken ct)
+        => Ok(await _consulta.ObterDetalheAsync(locacaoId, ct));
 
     [HttpGet("em-andamento")]
     public async Task<ActionResult<List<LocacaoDto>>> ListarEmAndamento(CancellationToken ct)

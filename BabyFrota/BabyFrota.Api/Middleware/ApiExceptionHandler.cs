@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Diagnostics;
+﻿using BabyFrota.Services.Common;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BabyFrota.Api.Middleware;
@@ -21,6 +22,7 @@ public class ApiExceptionHandler : IExceptionHandler
         var (status, title) = exception switch
         {
             UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, "Não autorizado"),
+            AcessoNegadoException => (StatusCodes.Status403Forbidden, "Acesso negado"),
             KeyNotFoundException => (StatusCodes.Status404NotFound, "Recurso não encontrado"),
             InvalidOperationException => (StatusCodes.Status400BadRequest, "Operação inválida"),
             ArgumentException => (StatusCodes.Status400BadRequest, "Requisição inválida"),

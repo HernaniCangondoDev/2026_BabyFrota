@@ -24,3 +24,14 @@ export function formatarMoeda(valor: number) {
 export function formatarDataHora(iso: string) {
   return new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
 }
+
+/** 95 -> "1h 35min"; 42 -> "42min". */
+export function formatarMinutos(minutos: number): string {
+  const horas = Math.floor(minutos / 60)
+  return horas > 0 ? `${horas}h ${minutos % 60}min` : `${minutos}min`
+}
+
+/** Tempo desde a entrega, em texto. Estimativa da tela; o valor oficial vem da prévia da devolução, calculada no servidor. */
+export function tempoDecorrido(dataEntregaIso: string, agora: number): string {
+  return formatarMinutos(Math.max(0, Math.round((agora - new Date(dataEntregaIso).getTime()) / 60000)))
+}

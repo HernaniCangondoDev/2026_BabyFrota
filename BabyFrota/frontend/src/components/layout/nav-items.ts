@@ -6,13 +6,18 @@ import {
   Tag,
   Building2,
   PackageCheck,
-  Repeat,
+  ClipboardList,
   Wallet,
   Landmark,
   ArrowLeftRight,
   Printer,
   FileBarChart,
   History,
+  FolderOpen,
+  ShoppingBag,
+  Coins,
+  ChartColumn,
+  ChartNoAxesCombined,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -25,6 +30,8 @@ export interface NavItem {
 export interface NavGroup {
   /** null = grupo "fixo" sem cabeçalho (usado para o Dashboard, sempre no topo). */
   label: string | null
+  /** Ícone do cabeçalho do grupo recolhível; ignorado no grupo fixo. */
+  icon?: LucideIcon
   items: NavItem[]
 }
 
@@ -39,6 +46,7 @@ export const navGroups: NavGroup[] = [
   },
   {
     label: 'Cadastros',
+    icon: FolderOpen,
     items: [
       { label: 'Clientes', to: '/clientes', icon: Users },
       { label: 'Usuários', to: '/usuarios', icon: UserCog },
@@ -49,21 +57,26 @@ export const navGroups: NavGroup[] = [
   },
   {
     label: 'Locação',
+    icon: ShoppingBag,
     items: [
-      { label: 'Entrega', to: '/locacao/entrega', icon: PackageCheck },
-      { label: 'Troca e Devolução', to: '/locacao/troca-devolucao', icon: Repeat },
+      // Entrega, devolução e troca acontecem na mesma tela: clicar numa locação em andamento abre devolver ou trocar.
+      { label: 'Entrega e Devolução', to: '/locacao/entrega', icon: PackageCheck },
+      { label: 'Locações', to: '/locacoes', icon: ClipboardList },
     ],
   },
   {
     label: 'Caixa',
+    icon: Coins,
     items: [
       { label: 'Abertura', to: '/caixa/abertura', icon: Wallet },
       { label: 'Fechamento', to: '/caixa/fechamento', icon: Landmark },
       { label: 'Suprimento e Sangria', to: '/caixa/suprimento-sangria', icon: ArrowLeftRight },
+      { label: 'Fluxo de Caixa', to: '/caixa/fluxo', icon: ChartNoAxesCombined },
     ],
   },
   {
     label: 'Relatórios & BI',
+    icon: ChartColumn,
     items: [
       { label: 'Etiquetas', to: '/etiquetas', icon: Printer },
       { label: 'Relatório de Clientes', to: '/relatorios/clientes', icon: FileBarChart },

@@ -11,8 +11,9 @@ import { EmpresaPage } from '@/pages/EmpresaPage'
 import { AberturaCaixaPage } from '@/pages/caixa/AberturaCaixaPage'
 import { FechamentoCaixaPage } from '@/pages/caixa/FechamentoCaixaPage'
 import { SuprimentoSangriaPage } from '@/pages/caixa/SuprimentoSangriaPage'
+import { FluxoCaixaPage } from '@/pages/caixa/FluxoCaixaPage'
 import { EntregaPage } from '@/pages/locacao/EntregaPage'
-import { TrocaDevolucaoPage } from '@/pages/locacao/TrocaDevolucaoPage'
+import { LocacoesPage } from '@/pages/locacao/LocacoesPage'
 import { RelatorioClientesPage } from '@/pages/relatorios/RelatorioClientesPage'
 import { HistoricoLocacoesPage } from '@/pages/relatorios/HistoricoLocacoesPage'
 import { EtiquetasPage } from '@/pages/EtiquetasPage'
@@ -33,11 +34,14 @@ function App() {
           <Route path="/empresa" element={<EmpresaPage />} />
 
           <Route path="/locacao/entrega" element={<EntregaPage />} />
-          <Route path="/locacao/troca-devolucao" element={<TrocaDevolucaoPage />} />
+          {/* A troca e a devolução agora abrem ao clicar numa locação em andamento na Entrega. */}
+          <Route path="/locacao/troca-devolucao" element={<Navigate to="/locacao/entrega" replace />} />
+          <Route path="/locacoes" element={<LocacoesPage />} />
 
           <Route path="/caixa/abertura" element={<AberturaCaixaPage />} />
           <Route path="/caixa/fechamento" element={<FechamentoCaixaPage />} />
           <Route path="/caixa/suprimento-sangria" element={<SuprimentoSangriaPage />} />
+          <Route path="/caixa/fluxo" element={<FluxoCaixaPage />} />
 
           <Route path="/etiquetas" element={<EtiquetasPage />} />
           <Route path="/relatorios/clientes" element={<RelatorioClientesPage />} />

@@ -65,6 +65,32 @@
   --ring: oklch(0.72 0.19 42);
 }
 
+/*
+ * Cores de gráficos: paleta categórica validada (claro e escuro) do guia de visualização de dados.
+ * A cor segue a ENTIDADE (forma de recebimento), nunca a posição na lista: filtrar não repinta o que sobra.
+ * Dinheiro/Débito/Crédito/Pix = slots 1 a 4 (em ordem); extras só existem se surgir uma 5ª forma.
+ * --viz-ranking (violeta, slot 7) fica de fora dos slots de forma para "recebido por utilizador" não parecer "dinheiro".
+ */
+:root {
+  --viz-forma-1: #2a78d6;
+  --viz-forma-2: #eb6834;
+  --viz-forma-3: #1baf7a;
+  --viz-forma-4: #eda100;
+  --viz-forma-5: #e87ba4;
+  --viz-forma-6: #008300;
+  --viz-ranking: #4a3aa7;
+}
+
+.dark {
+  --viz-forma-1: #3987e5;
+  --viz-forma-2: #d95926;
+  --viz-forma-3: #199e70;
+  --viz-forma-4: #c98500;
+  --viz-forma-5: #d55181;
+  --viz-forma-6: #008300;
+  --viz-ranking: #9085e9;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -105,5 +131,23 @@
   body {
     @apply bg-background text-foreground;
     font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  }
+}
+
+/*
+ * Comprovante impresso (bobina 80mm). Na tela o ticket fica escondido; ao imprimir, enquanto o ComprovanteHost marca
+ * body[data-imprimir], ele é a única coisa da página (o @page de 80mm é injetado só nesse momento).
+ */
+#comprovante-impressao {
+  display: none;
+}
+
+@media print {
+  body[data-imprimir='comprovante'] > *:not(#comprovante-impressao) {
+    display: none !important;
+  }
+
+  body[data-imprimir='comprovante'] #comprovante-impressao {
+    display: block;
   }
 }

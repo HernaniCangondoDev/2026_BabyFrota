@@ -46,7 +46,9 @@ public class DashboardService : IDashboardService
 
         var faturamentoHoje = locacoesHoje.Sum(l => l.ValorTotal ?? 0m);
         var qtdLocacoesHoje = locacoesHoje.Count;
-        var ticketMedioHoje = qtdLocacoesHoje > 0 ? faturamentoHoje / qtdLocacoesHoje : 0m;
+        // Locação em andamento ainda não tem valor (só é cobrada na devolução): fora do denominador, para não derrubar o ticket médio.
+        var qtdLocacoesConcluidasHoje = locacoesHoje.Count(l => l.Dtdevolucao != null);
+        var ticketMedioHoje = qtdLocacoesConcluidasHoje > 0 ? faturamentoHoje / qtdLocacoesConcluidasHoje : 0m;
 
         var topCarrinhos = await _db.Locacoes
             .Where(l => l.Dtentrega >= hoje.AddDays(-30))

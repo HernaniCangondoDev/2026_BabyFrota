@@ -5,7 +5,7 @@ import type { Empresa, EmpresaUpsert } from './types'
 
 const QUERY_KEY = ['empresa']
 
-async function obter(): Promise<Empresa | null> {
+export async function obterEmpresa(): Promise<Empresa | null> {
   try {
     const { data } = await api.get<Empresa>('/empresa')
     return data
@@ -16,7 +16,7 @@ async function obter(): Promise<Empresa | null> {
 }
 
 export function useEmpresa() {
-  return useQuery({ queryKey: QUERY_KEY, queryFn: obter })
+  return useQuery({ queryKey: QUERY_KEY, queryFn: obterEmpresa })
 }
 
 export function useSalvarEmpresa() {

@@ -54,7 +54,7 @@ export function AberturaCaixaPage() {
               <div className="space-y-1 text-sm text-muted-foreground">
                 <p>Aberto por <span className="text-foreground">{caixaAberto.usuarioAberturaNome}</span> em {formatarDataHora(caixaAberto.dataAbertura)}</p>
                 <p>Suprimento inicial: <span className="text-foreground">{formatarMoeda(caixaAberto.suprimentoInicial)}</span></p>
-                <p>Saldo atual: <span className="text-foreground font-medium">{formatarMoeda(caixaAberto.saldoAtual)}</span></p>
+                <p>Saldo em dinheiro: <span className="text-foreground font-medium">{formatarMoeda(caixaAberto.saldoEmDinheiro)}</span></p>
               </div>
               <Badge variant="success">Caixa aberto</Badge>
             </div>

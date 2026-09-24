@@ -32,7 +32,9 @@ public static class DependencyInjection
         services.AddScoped<IClienteService, ClienteService>();
         services.AddScoped<IEmpresaService, EmpresaService>();
         services.AddScoped<ICaixaService, CaixaService>();
+        services.AddScoped<IFluxoCaixaService, FluxoCaixaService>();
         services.AddScoped<ILocacaoService, LocacaoService>();
+        services.AddScoped<ILocacaoConsultaService, LocacaoConsultaService>();
         services.AddScoped<IRelatorioService, RelatorioService>();
 
         services.AddHttpClient("ViaCep", client =>

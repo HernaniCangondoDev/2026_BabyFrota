@@ -17,6 +17,10 @@ function TableBody({ className, ...props }: React.ComponentProps<'tbody'>) {
   return <tbody className={cn('[&_tr:last-child]:border-0', className)} {...props} />
 }
 
+function TableFooter({ className, ...props }: React.ComponentProps<'tfoot'>) {
+  return <tfoot className={cn('border-t bg-muted/50 font-medium [&>tr]:border-b-0', className)} {...props} />
+}
+
 function TableRow({ className, ...props }: React.ComponentProps<'tr'>) {
   return <tr className={cn('border-b transition-colors hover:bg-muted/50', className)} {...props} />
 }
@@ -34,4 +38,4 @@ function TableCell({ className, ...props }: React.ComponentProps<'td'>) {
   return <td className={cn('p-4 align-middle', className)} {...props} />
 }
 
-export { Table, TableHeader, TableBody, TableRow, TableHead, TableCell }
+export { Table, TableHeader, TableBody, TableFooter, TableRow, TableHead, TableCell }

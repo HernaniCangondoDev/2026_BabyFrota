@@ -1,7 +1,15 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AxiosError } from 'axios'
 import { api } from '@/lib/api'
-import type { AberturaCaixa, CaixaMovimento, FechamentoCaixa, MovimentoCaixa } from './types'
+import type { PagedResult } from '@/types/paged-result'
+import type {
+  AberturaCaixa,
+  CaixaMovimento,
+  FluxoCaixa,
+  FluxoCaixaFiltro,
+  FluxoCaixaResumo,
+  MovimentoCaixa,
+} from './types'
 
 const QUERY_KEY = ['caixa-aberto']
 
@@ -27,11 +35,15 @@ export function useAbrirCaixa() {
   })
 }
 
+/** Como no legado, o fechamento não recebe valor algum: o servidor grava o total vendido apurado. */
 export function useFecharCaixa() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (payload: FechamentoCaixa) => api.post<CaixaMovimento>('/caixa/fechamento', payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
+    mutationFn: () => api.post<CaixaMovimento>('/caixa/fechamento'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: ['caixa', 'fluxo'] })
+    },
   })
 }
 
@@ -69,4 +81,42 @@ export function useRegistrarSangria() {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
     },
   })
+}
+
+// ---------- Fluxo de Caixa ----------
+
+export function useFluxoCaixa(filtro: FluxoCaixaFiltro) {
+  return useQuery({
+    queryKey: ['caixa', 'fluxo', filtro],
+    queryFn: async () => (await api.get<PagedResult<FluxoCaixa>>('/caixa/fluxo', { params: filtro })).data,
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function useFluxoCaixaResumo(filtro: FluxoCaixaFiltro) {
+  // Indicadores e gráficos não dependem da página nem do tamanho dela: só do período e do nome.
+  const { dataInicio, dataFim, usuarioNome } = filtro
+  return useQuery({
+    queryKey: ['caixa', 'fluxo', 'resumo', { dataInicio, dataFim, usuarioNome }],
+    queryFn: async () =>
+      (await api.get<FluxoCaixaResumo>('/caixa/fluxo/resumo', { params: { dataInicio, dataFim, usuarioNome } })).data,
+    placeholderData: keepPreviousData,
+  })
+}
+
+const TAMANHO_PAGINA_EXPORTACAO = 500
+// Trava de segurança: 5.000 caixas (mais de 13 anos de caixa diário) já é muito além de qualquer relatório real.
+const MAX_PAGINAS_EXPORTACAO = 10
+
+/** Todos os caixas do filtro, para exportar (a lista da tela é paginada; o arquivo precisa ser completo). */
+export async function buscarFluxoCaixaCompleto(filtro: FluxoCaixaFiltro): Promise<FluxoCaixa[]> {
+  const todos: FluxoCaixa[] = []
+  for (let pagina = 1; pagina <= MAX_PAGINAS_EXPORTACAO; pagina++) {
+    const { data } = await api.get<PagedResult<FluxoCaixa>>('/caixa/fluxo', {
+      params: { ...filtro, pagina, tamanhoPagina: TAMANHO_PAGINA_EXPORTACAO },
+    })
+    todos.push(...data.itens)
+    if (pagina >= data.totalPaginas) break
+  }
+  return todos
 }
