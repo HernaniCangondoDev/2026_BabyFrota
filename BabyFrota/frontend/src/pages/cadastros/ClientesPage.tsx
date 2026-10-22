@@ -33,31 +33,50 @@ import { toast } from '@/stores/toast-store'
 import { extrairMensagemErro } from '@/lib/utils'
 import { useDebouncedValue } from '@/hooks/use-debounced-value'
 
+// Os limites são os das colunas do banco do legado. CPF, CEP, DDD, telefone e celular podem ser digitados com máscara
+// (o servidor guarda só os números); o que conta para o limite são os dígitos.
+const digitos = (valor?: string) => (valor ?? '').replace(/\D/g, '')
+const ateDigitos = (maximo: number, rotulo: string) =>
+  z
+    .string()
+    .optional()
+    .refine((v) => digitos(v).length <= maximo, `${rotulo}: no máximo ${maximo} dígitos`)
+const ateCaracteres = (maximo: number) => z.string().max(maximo, `No máximo ${maximo} caracteres`).optional()
+
 const filhoSchema = z.object({
   id: z.number().optional(),
-  nome: z.string().min(1, 'Informe o nome'),
+  nome: z.string().min(1, 'Informe o nome').max(100, 'No máximo 100 caracteres'),
   dataNascimento: z.string().optional(),
   sexo: z.string().optional(),
 })
 
 const schema = z.object({
-  nome: z.string().min(2, 'Informe o nome completo'),
-  cpf: z.string().min(11, 'CPF inválido'),
-  rg: z.string().optional(),
-  ddd: z.string().min(2, 'Informe o DDD'),
-  telefone: z.string().min(8, 'Telefone inválido'),
-  dddCelular: z.string().optional(),
-  celular: z.string().optional(),
-  email: z.union([z.string().email('Email inválido'), z.literal('')]).optional(),
-  cep: z.string().optional(),
-  logradouro: z.string().optional(),
-  numero: z.string().optional(),
-  complemento: z.string().optional(),
-  cidade: z.string().optional(),
-  uf: z.string().optional(),
+  nome: z.string().min(2, 'Informe o nome completo').max(100, 'No máximo 100 caracteres'),
+  cpf: z
+    .string()
+    .min(11, 'CPF inválido')
+    .refine((v) => digitos(v).length <= 11, 'CPF: no máximo 11 dígitos'),
+  rg: ateCaracteres(30),
+  ddd: z
+    .string()
+    .min(2, 'Informe o DDD')
+    .refine((v) => digitos(v).length <= 2, 'DDD: no máximo 2 dígitos'),
+  telefone: z
+    .string()
+    .min(8, 'Telefone inválido')
+    .refine((v) => digitos(v).length <= 9, 'Telefone: no máximo 9 dígitos'),
+  dddCelular: ateDigitos(2, 'DDD'),
+  celular: ateDigitos(9, 'Celular'),
+  email: z.union([z.string().email('Email inválido').max(50, 'No máximo 50 caracteres'), z.literal('')]).optional(),
+  cep: ateDigitos(8, 'CEP'),
+  logradouro: ateCaracteres(200),
+  numero: ateCaracteres(10),
+  complemento: ateCaracteres(100),
+  cidade: ateCaracteres(100),
+  uf: ateCaracteres(2),
   dataNascimento: z.string().optional(),
-  profissao: z.string().optional(),
-  observacao: z.string().optional(),
+  profissao: ateCaracteres(100),
+  observacao: ateCaracteres(1000),
   filhos: z.array(filhoSchema),
 })
 type FormValues = z.infer<typeof schema>
@@ -202,6 +221,8 @@ export function ClientesPage() {
     const payload = {
       ...values,
       email: values.email || undefined,
+      // O campo de data vazio vem como "" e a API (DateOnly?) recusa com 400; sem data, o campo não vai no corpo.
+      dataNascimento: values.dataNascimento || undefined,
       filhos: values.filhos.map((f) => ({
         id: f.id,
         nome: f.nome,
@@ -334,43 +355,45 @@ export function ClientesPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2 space-y-1.5">
                 <Label htmlFor="nome">Nome completo</Label>
-                <Input id="nome" {...register('nome')} />
+                <Input id="nome" maxLength={100} {...register('nome')} />
                 {errors.nome && <p className="text-xs text-destructive">{errors.nome.message}</p>}
               </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor="cpf">CPF</Label>
-                <Input id="cpf" {...register('cpf')} />
+                <Input id="cpf" maxLength={14} inputMode="numeric" {...register('cpf')} />
                 {errors.cpf && <p className="text-xs text-destructive">{errors.cpf.message}</p>}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="rg">RG</Label>
-                <Input id="rg" {...register('rg')} />
+                <Input id="rg" maxLength={30} {...register('rg')} />
               </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor="ddd">DDD</Label>
-                <Input id="ddd" {...register('ddd')} />
+                <Input id="ddd" maxLength={4} inputMode="numeric" {...register('ddd')} />
                 {errors.ddd && <p className="text-xs text-destructive">{errors.ddd.message}</p>}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="telefone">Telefone</Label>
-                <Input id="telefone" {...register('telefone')} />
+                <Input id="telefone" maxLength={10} inputMode="tel" {...register('telefone')} />
                 {errors.telefone && <p className="text-xs text-destructive">{errors.telefone.message}</p>}
               </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor="dddCelular">DDD Celular</Label>
-                <Input id="dddCelular" {...register('dddCelular')} />
+                <Input id="dddCelular" maxLength={4} inputMode="numeric" {...register('dddCelular')} />
+                {errors.dddCelular && <p className="text-xs text-destructive">{errors.dddCelular.message}</p>}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="celular">Celular</Label>
-                <Input id="celular" {...register('celular')} />
+                <Input id="celular" maxLength={10} inputMode="tel" {...register('celular')} />
+                {errors.celular && <p className="text-xs text-destructive">{errors.celular.message}</p>}
               </div>
 
               <div className="col-span-2 space-y-1.5">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" {...register('email')} />
+                <Input id="email" type="email" maxLength={50} {...register('email')} />
                 {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
               </div>
             </div>
@@ -412,6 +435,7 @@ export function ClientesPage() {
                     </Button>
                   </div>
                   {erroCep && <p className="text-xs text-destructive">{erroCep}</p>}
+                  {!erroCep && errors.cep && <p className="text-xs text-destructive">{errors.cep.message}</p>}
                   {bairroEncontrado && !erroCep && (
                     <p className="text-xs text-muted-foreground">Bairro: {bairroEncontrado}</p>
                   )}
@@ -423,21 +447,21 @@ export function ClientesPage() {
 
                 <div className="space-y-1.5">
                   <Label htmlFor="logradouro">Logradouro</Label>
-                  <Input id="logradouro" {...register('logradouro')} />
+                  <Input id="logradouro" maxLength={200} {...register('logradouro')} />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="numero">Número</Label>
-                  <Input id="numero" {...register('numero')} />
+                  <Input id="numero" maxLength={10} {...register('numero')} />
                 </div>
 
                 <div className="space-y-1.5">
                   <Label htmlFor="complemento">Complemento</Label>
-                  <Input id="complemento" {...register('complemento')} />
+                  <Input id="complemento" maxLength={100} {...register('complemento')} />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1.5">
                     <Label htmlFor="cidade">Cidade</Label>
-                    <Input id="cidade" {...register('cidade')} />
+                    <Input id="cidade" maxLength={100} {...register('cidade')} />
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="uf">UF</Label>
@@ -449,12 +473,12 @@ export function ClientesPage() {
 
             <div className="space-y-1.5">
               <Label htmlFor="profissao">Profissão</Label>
-              <Input id="profissao" {...register('profissao')} />
+              <Input id="profissao" maxLength={100} {...register('profissao')} />
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="observacao">Observação</Label>
-              <Input id="observacao" {...register('observacao')} />
+              <Input id="observacao" maxLength={1000} {...register('observacao')} />
             </div>
 
             <div className="space-y-3 rounded-lg border p-3">
@@ -480,7 +504,7 @@ export function ClientesPage() {
                 <div key={filho.id} className="grid grid-cols-[1fr_auto_auto_auto] items-end gap-2">
                   <div className="space-y-1.5">
                     <Label htmlFor={`filhos.${index}.nome`}>Nome</Label>
-                    <Input id={`filhos.${index}.nome`} {...register(`filhos.${index}.nome` as const)} />
+                    <Input id={`filhos.${index}.nome`} maxLength={100} {...register(`filhos.${index}.nome` as const)} />
                     {errors.filhos?.[index]?.nome && (
                       <p className="text-xs text-destructive">{errors.filhos[index]?.nome?.message}</p>
                     )}

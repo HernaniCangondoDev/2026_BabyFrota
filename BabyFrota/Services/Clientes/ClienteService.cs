@@ -123,6 +123,8 @@ public class ClienteService : IClienteService
 
     public async Task<ClienteDto> CriarAsync(ClienteUpsertRequest request, CancellationToken ct = default)
     {
+        // Antes de tudo: tira as máscaras (o CPF com pontos também escapava da checagem de CPF repetido).
+        NormalizacaoCliente.Aplicar(request);
         await ValidarCpfUnicoAsync(request.Cpf, idAtual: null, ct);
 
         var entidade = new Cliente
@@ -171,6 +173,7 @@ public class ClienteService : IClienteService
         var entidade = await _db.Clientes.Include(c => c.Filhos).FirstOrDefaultAsync(c => c.Cdcliente == id, ct)
             ?? throw new KeyNotFoundException($"Cliente {id} não encontrado.");
 
+        NormalizacaoCliente.Aplicar(request);
         await ValidarCpfUnicoAsync(request.Cpf, idAtual: id, ct);
 
         entidade.Nome = request.Nome;
